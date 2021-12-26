@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  jenkins:
+    image: configured-jenkins
+    build: .
+    ports:
+      - 8080:8080
+    volumes:
+      - configured-jenkins-home:/var/jenkins_home
+    healthcheck:
+      test: curl -s http://localhost:8080/login
+      timeout: 30s
+      retries: 10
+volumes:
+  configured-jenkins-home:
