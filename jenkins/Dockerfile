@@ -6,6 +6,7 @@ USER root
 RUN addgroup -g ${DOCKER_GID} docker && addgroup jenkins docker
 
 USER jenkins
+RUN git config --global init.defaultBranch master
 RUN jenkins-plugin-cli --plugins \
   docker-plugin:1.2.6 docker-workflow:1.26 http_request:1.12 \
   pipeline-utility-steps:2.11.0 rebuild:1.32
