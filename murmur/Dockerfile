@@ -35,7 +35,7 @@ RUN git clone --single-branch -b 1.4.x ${MUMBLE_REPO} /root/mumble
 WORKDIR /root/mumble/build
 
 RUN git submodule update --init --recursive
-RUN cmake -Dclient=OFF -DCMAKE_BUILD_TYPE=Release -Dgrpc=ON .. || \
+RUN cmake -Dclient=OFF -Dstatic=ON -DCMAKE_BUILD_TYPE=Release -Dgrpc=ON .. || \
     ( cat \
     /root/mumble/build/CMakeFiles/CMakeOutput.log \
     /root/mumble/build/CMakeFiles/CMakeError.log \
