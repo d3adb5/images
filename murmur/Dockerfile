@@ -2,6 +2,7 @@ FROM ubuntu:focal
 
 # needed to install tzdata
 ARG DEBIAN_FRONTEND=noninteractive
+ARG MUMBLE_REPO=https://github.com/mumble-voip/mumble
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
 	ca-certificates \
@@ -30,7 +31,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-COPY . /root/mumble
+RUN git clone --single-branch -b 1.4.x ${MUMBLE_REPO} /root/mumble
 WORKDIR /root/mumble/build
 
 RUN git submodule update --init --recursive
