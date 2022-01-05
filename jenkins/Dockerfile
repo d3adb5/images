@@ -4,6 +4,7 @@ ARG DOCKER_GID=974
 
 USER root
 RUN addgroup -g ${DOCKER_GID} docker && addgroup jenkins docker
+RUN apk add patch
 
 USER jenkins
 RUN git config --global init.defaultBranch master
