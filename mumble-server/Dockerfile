@@ -5,37 +5,25 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG MUMBLE_REPO=https://github.com/mumble-voip/mumble
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
-	ca-certificates \
-	git \
-	build-essential \
-	cmake \
-	pkg-config \
-	qt5-default \
-	libboost-dev \
-	libasound2-dev \
-	libssl-dev \
-	libspeechd-dev \
-	libzeroc-ice-dev \
-	libpulse-dev \
-	libcap-dev \
-	libprotobuf-dev \
-	protobuf-compiler \
-	protobuf-compiler-grpc \
-	libprotoc-dev \
-	libogg-dev \
-	libavahi-compat-libdnssd-dev \
-	libsndfile1-dev \
-	libgrpc++-dev \
-	libxi-dev \
-	libbz2-dev \
+	ca-certificates cmake git build-essential pkg-config curl \
+	zip unzip tar \
+	libx11-dev \
+    mesa-common-dev \
+    libxi-dev \
+    libxext-dev \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN git clone --single-branch -b 1.4.x ${MUMBLE_REPO} /root/mumble
+WORKDIR /root/mumble
+RUN /root/mumble/scripts/vcpkg/get_mumble_dependencies.sh
 WORKDIR /root/mumble/build
 
 RUN git submodule update --init --recursive
-RUN cmake -Dclient=OFF -Dstatic=ON -DCMAKE_BUILD_TYPE=Release -Dgrpc=ON .. || \
+RUN cmake -Dclient=OFF -Dstatic=ON -Dice=OFF \
+	-DVCPKG_TARGET_TRIPLET=x64-linux \
+	-DCMAKE_TOOLCHAIN_FILE=/root/vcpkg/scripts/buildsystems/vcpkg.cmake \
+	-DCMAKE_BUILD_TYPE=Release .. || \
     ( cat \
     /root/mumble/build/CMakeFiles/CMakeOutput.log \
     /root/mumble/build/CMakeFiles/CMakeError.log \
@@ -49,24 +37,6 @@ FROM ubuntu:focal
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN adduser murmur
-RUN apt-get update && apt-get install --no-install-recommends -y \
-	libcap2 \
-	libzeroc-ice3.7 \
-	'^libprotobuf[0-9]+$' \
-	'^libgrpc[0-9]+$' \
-	libgrpc++1 \
-	libavahi-compat-libdnssd1 \
-	libqt5core5a \
-	libqt5network5 \
-	libqt5sql5 \
-	libqt5sql5-mysql \
-	libqt5sql5-psql \
-	libqt5sql5-sqlite \
-	libqt5xml5 \
-	libqt5dbus5 \
-	ca-certificates \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=0 /root/mumble/build/mumble-server /usr/bin/mumble-server
 COPY --from=0 /root/mumble/scripts/murmur.ini /etc/murmur/murmur.ini
