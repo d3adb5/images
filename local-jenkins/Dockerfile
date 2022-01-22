@@ -4,10 +4,8 @@ ARG DOCKER_GID=974
 
 USER root
 RUN addgroup -g ${DOCKER_GID} docker && addgroup jenkins docker
-RUN apk add patch
 
 USER jenkins
-RUN git config --global init.defaultBranch master
 RUN jenkins-plugin-cli --plugins \
   build-monitor-plugin:1.13+build.202201031653 build-name-setter:2.2.0 \
   docker-plugin:1.2.6 docker-workflow:1.26 http_request:1.12 \
