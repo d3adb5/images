@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches: [ master ]
+
+jobs:
+  list-images:
+    name: Process images
+    runs-on: ubuntu-latest
+
+    outputs:
+      images-matrix: ${{ steps.build-matrix.outputs.matrix }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v2
+
+      - id: changed-files
+        name: Get list of modified and added files
+        uses: jitterbit/get-changed-files@v1
+
+      - id: changed-images
+        name: Create list of changed images
+        run: |
+          directories=$(echo "${{ steps.changed-files.outputs.all }}" \
+            | tr ' ' '\n' | xargs -n 1 dirname | sort | uniq | paste -sd ' ')
+          printf '::set-output name=directories::'
+          find $directories -maxdepth 1 -type f -name 'Dockerfile' \
+            -printf '%h\n' | paste -sd ' '
+
+      - id: build-matrix
+        name: Generate build matrix for changed images
+        run: |
+          printf '::set-output name=matrix::{"include":['
+          echo "${{ steps.changed-images.outputs.directories }}" | tr ' ' '\n' \
+            | sed 's/^/{"image":"/;s/$/"}/' | paste -sd ',' | tr -d '\n'
+          printf ']}'
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: list-images
+
+    if: ${{ ! contains(needs.list-images.outputs.images-matrix, '""') }}
+
+    strategy:
+      matrix: ${{ fromJSON(needs.list-images.outputs.images-matrix) }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v2
+
+      - name: Build ${{ matrix.image }}
+        run: docker build -t "${{ matrix.image }}" "${{ matrix.image }}"
