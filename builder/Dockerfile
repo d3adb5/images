@@ -4,4 +4,4 @@ LABEL org.opencontainers.image.author="d3adb5" \
       org.label-schema.description="A container image for my personal builds!" \
       org.label-schema.version="1.0"
 
-RUN apk update && add curl git patch
+RUN apk update && apk add curl git patch
