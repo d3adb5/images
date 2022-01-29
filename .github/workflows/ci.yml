@@ -6,6 +6,24 @@ on:
     branches: [ master ]
 
 jobs:
+  scan-repo:
+    name: Scan repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v2
+
+      - name: Scan files
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "table"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
   list-images:
     name: Process images
     runs-on: ubuntu-latest
