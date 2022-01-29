@@ -72,7 +72,10 @@ jobs:
 
       - name: Build ${{ matrix.image }}
         run: |
-          docker build -t "${{ matrix.image }}" "${{ matrix.image }}"
+          docker build -t "${{ matrix.image }}" \
+            --label org.label-schema.build-date=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+            --label org.label-schema.vcs-ref=${{ github.sha }} \
+            "${{ matrix.image }}"
           docker save "${{ matrix.image }}" | gzip > "${{ matrix.image }}.tgz"
 
       - name: Upload built image
