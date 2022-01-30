@@ -1,81 +1,34 @@
-FROM ubuntu:focal
+FROM alpine AS download
 
-# needed to install tzdata
-ARG DEBIAN_FRONTEND=noninteractive
-ARG MUMBLE_REPO=https://github.com/mumble-voip/mumble
+ARG MURMUR_VERSION=1.3.4
 
-RUN apt-get update && apt-get install --no-install-recommends -y \
-	ca-certificates \
-	git \
-	build-essential \
-	cmake \
-	pkg-config \
-	qt5-default \
-	libboost-dev \
-	libasound2-dev \
-	libssl-dev \
-	libspeechd-dev \
-	libzeroc-ice-dev \
-	libpulse-dev \
-	libcap-dev \
-	libprotobuf-dev \
-	protobuf-compiler \
-	protobuf-compiler-grpc \
-	libprotoc-dev \
-	libogg-dev \
-	libavahi-compat-libdnssd-dev \
-	libsndfile1-dev \
-	libgrpc++-dev \
-	libxi-dev \
-	libbz2-dev \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
+ARG SERVER_BANDWIDTH=256000
+ARG SERVER_PORT=64738
 
-RUN git clone --single-branch -b 1.4.x ${MUMBLE_REPO} /root/mumble
-WORKDIR /root/mumble/build
+WORKDIR /murmur
 
-RUN git submodule update --init --recursive
-RUN cmake -Dclient=OFF -Dstatic=ON -DCMAKE_BUILD_TYPE=Release -Dgrpc=ON .. || \
-    ( cat \
-    /root/mumble/build/CMakeFiles/CMakeOutput.log \
-    /root/mumble/build/CMakeFiles/CMakeError.log \
-    && false \
-    )
-RUN make -j $(nproc)
+ADD https://dl.mumble.info/stable/murmur-static_x86-${MURMUR_VERSION}.tar.bz2 murmur-static.tar.bz2
 
-# Clean distribution stage
-FROM ubuntu:focal
+RUN tar xf murmur-static.tar.bz2 && mv murmur-static_x86-${MURMUR_VERSION} murmur-static
+RUN sed -i "s/^bandwidth=.*/bandwidth=${SERVER_BANDWIDTH}/" murmur-static/murmur.ini && \
+    sed -i "s/^port=.*/port=${SERVER_PORT}/" murmur-static/murmur.ini
 
-ARG DEBIAN_FRONTEND=noninteractive
 
-RUN adduser murmur
-RUN apt-get update && apt-get install --no-install-recommends -y \
-	libcap2 \
-	libzeroc-ice3.7 \
-	'^libprotobuf[0-9]+$' \
-	'^libgrpc[0-9]+$' \
-	libgrpc++1 \
-	libavahi-compat-libdnssd1 \
-	libqt5core5a \
-	libqt5network5 \
-	libqt5sql5 \
-	libqt5sql5-mysql \
-	libqt5sql5-psql \
-	libqt5sql5-sqlite \
-	libqt5xml5 \
-	libqt5dbus5 \
-	ca-certificates \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
 
-COPY --from=0 /root/mumble/build/mumble-server /usr/bin/mumble-server
-COPY --from=0 /root/mumble/scripts/murmur.ini /etc/murmur/murmur.ini
+FROM scratch
 
-RUN mkdir /var/lib/murmur && \
-	chown --verbose murmur:murmur /var/lib/murmur && \
-	sed -i 's/^database=$/database=\/var\/lib\/murmur\/murmur.sqlite/' /etc/murmur/murmur.ini
+LABEL org.opencontainers.image.author="d3adb5" \
+      org.label-schema.description="The Mumble server, built statically."
 
-EXPOSE 64738/tcp 64738/udp 50051
-USER murmur
+COPY --from=download /etc/passwd /etc/group /etc/
+USER nobody
 
-CMD /usr/bin/mumble-server -v -fg -ini /etc/murmur/murmur.ini
+COPY --from=download --chown=nobody:nobody /murmur/murmur-static/murmur.x86 /murmur/murmur
+COPY --from=download --chown=nobody:nobody /murmur/murmur-static/murmur.ini /murmur/murmur.ini
+
+WORKDIR /murmur
+
+EXPOSE 64738/tcp
+EXPOSE 64738/udp
+
+ENTRYPOINT ["/murmur/murmur", "-fg"]
