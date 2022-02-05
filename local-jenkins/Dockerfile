@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:lts-alpine@sha256:5ac4c620e28b0b62ba6ca715ddbca3f661fafd522a3983292b1f784ca1d2fa56
+FROM jenkins/jenkins:lts-alpine@sha256:8a18b4ae96f80d364d085375fc6d40f25ee16a8c6e4ae3d4d7e95bf14db48059
 
 ARG DOCKER_GID=974
 
